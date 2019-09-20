@@ -58,7 +58,7 @@ Version 1.0 September 20th, 2019
 Mail
 =====
 Developer
-    김광륜(https://github.com/HaloKim)
-    이석재(https://github.com/doljae)
-    최진경(https://github.com/choijinkyung)
+    김광륜(https://github.com/HaloKim)<br>
+    이석재(https://github.com/doljae)<br>
+    최진경(https://github.com/choijinkyung)<br>
 
