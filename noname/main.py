@@ -1,82 +1,144 @@
-#!/usr/bin/etc python
+import os
+import torch
+import torchvision
+import torch.nn as nn
+from torchvision import transforms
+from torchvision.utils import save_image
 
-import cv2
-import numpy as np
-import pytesseract
-from PIL import Image
+# Device configuration
+device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
-class Recognition:
-    def ExtractNumber(self):
-        Number = 'sample.jpeg'
-        img = cv2.imread(Number, cv2.IMREAD_COLOR)
-        copy_img = img.copy()
-        img2 = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-        cv2.imwrite('gray.jpg', img2)
-        blur = cv2.GaussianBlur(img2, (3, 3), 0)
-        cv2.imwrite('blur.jpg', blur)
-        canny = cv2.Canny(blur, 100, 200)
-        cv2.imwrite('canny.jpg', canny)
-        contours, hierarchy = cv2.findContours(canny, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+# Hyper-parameters
+latent_size = 64
+hidden_size = 256
+image_size = 784
+num_epochs = 20
+batch_size = 10
+sample_dir = 'samples'
 
-        box1 = []
-        f_count = 0
-        select = 0
-        plate_width = 0
+# Create a directory if not exists
+if not os.path.exists(sample_dir):
+    os.makedirs(sample_dir)
 
-        for i in range(len(contours)):
-            cnt = contours[i]
-            area = cv2.contourArea(cnt)
-            x, y, w, h = cv2.boundingRect(cnt)
-            rect_area = w * h  # area size
-            aspect_ratio = float(w) / h  # ratio = width/height
+# Image processing
+transform = transforms.Compose([
+transforms.ToTensor(), transforms.Normalize([0.5], [0.5])])
 
-            if (aspect_ratio >= 0.2) and (aspect_ratio <= 1.0) and (rect_area >= 100) and (rect_area <= 700):
-                cv2.rectangle(img, (x, y), (x + w, y + h), (0, 255, 0), 1)
-                box1.append(cv2.boundingRect(cnt))
+# MNIST dataset
+mnist = torchvision.datasets.MNIST(root='../../data/',
+                                   train=True,
+                                   transform=transform,
+                                   download=True)
 
-        for i in range(len(box1)):  ##Buble Sort on python
-            for j in range(len(box1) - (i + 1)):
-                if box1[j][0] > box1[j + 1][0]:
-                    temp = box1[j]
-                    box1[j] = box1[j + 1]
-                    box1[j + 1] = temp
+# Data loader
+data_loader = torch.utils.data.DataLoader(dataset=mnist,
+                                          batch_size=batch_size,
+                                          shuffle=True)
 
-        # to find number plate measureing length between rectangles
-        for m in range(len(box1)):
-            count = 0
-            for n in range(m + 1, (len(box1) - 1)):
-                delta_x = abs(box1[n + 1][0] - box1[m][0])
-                if delta_x > 150:
-                    break
-                delta_y = abs(box1[n + 1][1] - box1[m][1])
-                if delta_x == 0:
-                    delta_x = 1
-                if delta_y == 0:
-                    delta_y = 1
-                gradient = float(delta_y) / float(delta_x)
-                if gradient < 0.25:
-                    count = count + 1
-            # measure number plate size
-            if count > f_count:
-                select = m
-                f_count = count;
-                plate_width = delta_x
-        cv2.imwrite('snake.jpg', img)
+# Discriminator
+D = nn.Sequential(
+    nn.Linear(image_size, hidden_size),
+    nn.LeakyReLU(0.2),
+    nn.Linear(hidden_size, hidden_size),
+    nn.LeakyReLU(0.2),
+    nn.Linear(hidden_size, 1),
+    nn.Sigmoid())
 
-        number_plate = copy_img[box1[select][1] - 10:box1[select][3] + box1[select][1] + 20,
-                       box1[select][0] - 10:140 + box1[select][0]]
-        resize_plate = cv2.resize(number_plate, None, fx=1.8, fy=1.8, interpolation=cv2.INTER_CUBIC + cv2.INTER_LINEAR)
-        plate_gray = cv2.cvtColor(resize_plate, cv2.COLOR_BGR2GRAY)
-        ret, th_plate = cv2.threshold(plate_gray, 150, 255, cv2.THRESH_BINARY)
+# Generator
+G = nn.Sequential(
+    nn.Linear(latent_size, hidden_size),
+    nn.ReLU(),
+    nn.Linear(hidden_size, hidden_size),
+    nn.ReLU(),
+    nn.Linear(hidden_size, image_size),
+    nn.Tanh())
 
-        cv2.imwrite('plate_th.jpg', th_plate)
-        kernel = np.ones((3, 3), np.uint8)
-        er_plate = cv2.erode(th_plate, kernel, iterations=1)
-        er_invplate = er_plate
-        cv2.imwrite('er_plate.jpg', er_invplate)
-        result = pytesseract.image_to_string(Image.open('er_plate.jpg'), lang='kor')
-        return (result.replace(" ", ""))
+# Device setting
+D = D.to(device)
+G = G.to(device)
 
-recogtest = Recognition()
-result = recogtest.ExtractNumber()
-print(result)
+# Binary cross entropy loss and optimizer
+criterion = nn.BCELoss()
+d_optimizer = torch.optim.Adam(D.parameters(), lr=0.0002)
+g_optimizer = torch.optim.Adam(G.parameters(), lr=0.0002)
+
+
+def denorm(x):
+    out = (x + 1) / 2
+    return out.clamp(0, 1)
+
+
+def reset_grad():
+    d_optimizer.zero_grad()
+    g_optimizer.zero_grad()
+
+
+# Start training
+total_step = len(data_loader)
+for epoch in range(num_epochs):
+    for i, (images, _) in enumerate(data_loader):
+        images = images.reshape(batch_size, -1).to(device)
+
+        # Create the labels which are later used as input for the BCE loss
+        real_labels = torch.ones(batch_size, 1).to(device)
+        fake_labels = torch.zeros(batch_size, 1).to(device)
+
+        # ================================================================== #
+        #                      Train the discriminator                       #
+        # ================================================================== #
+
+        # Compute BCE_Loss using real images where BCE_Loss(x, y): - y * log(D(x)) - (1-y) * log(1 - D(x))
+        # Second term of the loss is always zero since real_labels == 1
+        outputs = D(images)
+        d_loss_real = criterion(outputs, real_labels)
+        real_score = outputs
+
+        # Compute BCELoss using fake images
+        # First term of the loss is always zero since fake_labels == 0
+        z = torch.randn(batch_size, latent_size).to(device)
+        fake_images = G(z)
+        outputs = D(fake_images)
+        d_loss_fake = criterion(outputs, fake_labels)
+        fake_score = outputs
+
+        # Backprop and optimize
+        d_loss = d_loss_real + d_loss_fake
+        reset_grad()
+        d_loss.backward()
+        d_optimizer.step()
+
+        # ================================================================== #
+        #                        Train the generator                         #
+        # ================================================================== #
+
+        # Compute loss with fake images
+        z = torch.randn(batch_size, latent_size).to(device)
+        fake_images = G(z)
+        outputs = D(fake_images)
+
+        # We train G to maximize log(D(G(z)) instead of minimizing log(1-D(G(z)))
+        # For the reason, see the last paragraph of section 3. https://arxiv.org/pdf/1406.2661.pdf
+        g_loss = criterion(outputs, real_labels)
+
+        # Backprop and optimize
+        reset_grad()
+        g_loss.backward()
+        g_optimizer.step()
+
+        if (i + 1) % 200 == 0:
+            print('Epoch [{}/{}], Step [{}/{}], d_loss: {:.4f}, g_loss: {:.4f}, D(x): {:.2f}, D(G(z)): {:.2f}'
+                  .format(epoch, num_epochs, i + 1, total_step, d_loss.item(), g_loss.item(),
+                          real_score.mean().item(), fake_score.mean().item()))
+
+    # Save real images
+    if (epoch + 1) == 1:
+        images = images.reshape(images.size(0), 1, 28, 28)
+        save_image(denorm(images), os.path.join(sample_dir, 'real_images.png'))
+
+    # Save sampled images
+    fake_images = fake_images.reshape(fake_images.size(0), 1, 28, 28)
+    save_image(denorm(fake_images), os.path.join(sample_dir, 'fake_images-{}.png'.format(epoch + 1)))
+
+# Save the model checkpoints
+torch.save(G.state_dict(), 'G.ckpt')
+torch.save(D.state_dict(), 'D.ckpt')
