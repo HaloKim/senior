@@ -24,17 +24,22 @@ if not os.path.exists(sample_dir):
 transform = transforms.Compose([
 transforms.ToTensor(), transforms.Normalize([0.5], [0.5])])
 
+"""
 # MNIST dataset
 mnist = torchvision.datasets.MNIST(root='../../data/',
                                    train=True,
                                    transform=transform,
                                    download=True)
+"""
 
 # Data loader
+"""
 data_loader = torch.utils.data.DataLoader(dataset=mnist,
                                           batch_size=batch_size,
                                           shuffle=True)
+"""
 
+data_loader = 'ex.jpg'
 # Discriminator
 D = nn.Sequential(
     nn.Linear(image_size, hidden_size),
