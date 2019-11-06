@@ -9,27 +9,18 @@ from keras.layers.advanced_activations import LeakyReLU
 from keras.layers.convolutional import UpSampling2D, Conv2D
 from keras.models import Sequential, Model
 from keras.optimizers import Adam
+from keras.callbacks import ModelCheckpoint
 from google.colab import drive,files
 import datetime
 import matplotlib.pyplot as plt
 import sys
+from data_loader import DataLoader
 import numpy as np
 import os
-from data_loader import Data_Loader
 ! unzip datasets.zip
 #os.environ['KMP_DUPLICATE_LIB_OK'] = 'True'
-def saved_data():
-  notebooks_dir_name = '/Colab\ Notebooks/imports'
-  drive.mount('/content/drive')
-  notebooks_base_dir = path.join('./drive/My\ Drive', notebooks_dir_name)
-  if not path.exists(notebooks_base_dir):
-    print('Check your google drive directory. See you file explorer')
-  with open(path.join(notebooks_base_dir, "myfile.txt"), "w") as f:
-    f.write("Google Colab is good!!!")
-
 class Pix2Pix():
     def __init__(self):
-        saved_data()
         # Input shape
         self.img_rows = 256
         self.img_cols = 256
@@ -85,7 +76,6 @@ class Pix2Pix():
 
     def build_generator(self):
         """U-Net Generator"""
-
         def conv2d(layer_input, filters, f_size=4, bn=True):
             """Layers used during downsampling"""
             d = Conv2D(filters, kernel_size=f_size, strides=2, padding='same')(layer_input)
@@ -197,6 +187,15 @@ class Pix2Pix():
                     self.sample_images(epoch, batch_i)
 
     def sample_images(self, epoch, batch_i):
+        # create model
+        model = Sequential()
+        model.add(Dense(12, input_dim=8, kernel_initializer='uniform', activation='relu'))
+        model.add(Dense(8, kernel_initializer='uniform', activation='relu'))
+        model.add(Dense(1, kernel_initializer='uniform', activation='sigmoid'))
+
+        # Compile model
+        model.compile(loss='binary_crossentropy', optimizer='adam', metrics=['accuracy'])
+
         os.makedirs('images/%s' % self.dataset_name, exist_ok=True)
         r, c = 3, 3
 
@@ -225,8 +224,7 @@ class Pix2Pix():
           print("Saved jason..")
         model.save_weights("model.h5")
         print("Saved model to disk")
-        saved_data()
 if __name__ == '__main__':
     gan = Pix2Pix()
-    gan.train(epochs=1, batch_size=1, sample_interval=200)
+    gan.train(epochs=100, batch_size=1, sample_interval=200)
     print("finished..")
