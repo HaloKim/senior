@@ -10,15 +10,15 @@ from keras.layers.convolutional import UpSampling2D, Conv2D
 from keras.models import Sequential, Model
 from keras.optimizers import Adam
 from keras.callbacks import ModelCheckpoint
-from google.colab import drive,files
+#from google.colab import drive,files
 import datetime
 import matplotlib.pyplot as plt
 import sys
 from data_loader import DataLoader
 import numpy as np
 import os
-! unzip datasets.zip
-#os.environ['KMP_DUPLICATE_LIB_OK'] = 'True'
+#! unzip datasets.zip
+os.environ['KMP_DUPLICATE_LIB_OK'] = 'True'
 class Pix2Pix():
     def __init__(self):
         # Input shape
