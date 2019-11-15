@@ -1,4 +1,5 @@
 import cv2
+
 class Recognition:
     def ExtractNumber(self):
         Number = 'sample.jpeg'
@@ -27,6 +28,9 @@ class Recognition:
                 if (0 <= abs(rect_area - rect_area2)) and (abs(rect_area - rect_area2) <= 20):
                     cv2.rectangle(img, (x, y), (x + w, y + h), (0, 255, 0), 1)
                     box.append(cv2.boundingRect(cnt))
+                    pass
+                pass
+            pass
 
         for i in range(len(box)):  # Buble Sort on python
             for j in range(len(box) - (i + 1)):
@@ -35,6 +39,14 @@ class Recognition:
                     box[j] = box[j + 1]
                     box[j + 1] = temp
         cv2.imwrite('box.jpg', img)
+        # print("(좌상단의 x_pos, 좌상단의 y_pos, 가로길이, 세로길이)")
+        # print(box)
+        # print("box의 갯수: ",len(box))
+        # crop_img = img[y: y + h, x: x + w]
+        for i in range(len(box)):
+            crop_img=img[box[i][1]:box[i][1]+box[i][3], box[i][0]:box[i][0]+box[i][2]]
+            cv2.imwrite("crop_img_"+str(i)+".jpg",crop_img)
+            pass
         return 1
 
 recogtest = Recognition()
