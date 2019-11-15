@@ -28,9 +28,6 @@ class Recognition:
                 if (0 <= abs(rect_area - rect_area2)) and (abs(rect_area - rect_area2) <= 20):
                     cv2.rectangle(img, (x, y), (x + w, y + h), (0, 255, 0), 1)
                     box.append(cv2.boundingRect(cnt))
-                    pass
-                pass
-            pass
 
         for i in range(len(box)):  # Buble Sort on python
             for j in range(len(box) - (i + 1)):
