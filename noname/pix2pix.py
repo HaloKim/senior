@@ -1,24 +1,27 @@
 from __future__ import print_function, division
 import scipy
 
-#from keras.datasets import mnist
 from keras_contrib.layers.normalization.instancenormalization import InstanceNormalization
 from keras.layers import Input, Dense, Reshape, Flatten, Dropout, Concatenate
 from keras.layers import BatchNormalization, Activation, ZeroPadding2D
 from keras.layers.advanced_activations import LeakyReLU
 from keras.layers.convolutional import UpSampling2D, Conv2D
 from keras.models import Sequential, Model
+from keras.models import model_from_json
 from keras.optimizers import Adam
 from keras.callbacks import ModelCheckpoint
-#from google.colab import drive,files
+# from google.colab import drive, files
 import datetime
 import matplotlib.pyplot as plt
 import sys
 from data_loader import DataLoader
 import numpy as np
 import os
-#! unzip datasets.zip
-os.environ['KMP_DUPLICATE_LIB_OK'] = 'True'
+# ! unzip
+# datasets.zip
+
+
+# os.environ['KMP_DUPLICATE_LIB_OK'] = 'True'
 class Pix2Pix():
     def __init__(self):
         # Input shape
@@ -33,7 +36,7 @@ class Pix2Pix():
                                       img_res=(self.img_rows, self.img_cols))
 
         # Calculate output shape of D (PatchGAN)
-        patch = int(self.img_rows / 2**4)
+        patch = int(self.img_rows / 2 ** 4)
         self.disc_patch = (patch, patch, 1)
 
         # Number of filters in the first layer of G and D
@@ -45,13 +48,13 @@ class Pix2Pix():
         # Build and compile the discriminator
         self.discriminator = self.build_discriminator()
         self.discriminator.compile(loss='mse',
-            optimizer=optimizer,
-            metrics=['accuracy'])
+                                   optimizer=optimizer,
+                                   metrics=['accuracy'])
 
-        #-------------------------
+        # -------------------------
         # Construct Computational
         #   Graph of Generator
-        #-------------------------
+        # -------------------------
 
         # Build the generator
         self.generator = self.build_generator()
@@ -76,6 +79,7 @@ class Pix2Pix():
 
     def build_generator(self):
         """U-Net Generator"""
+
         def conv2d(layer_input, filters, f_size=4, bn=True):
             """Layers used during downsampling"""
             d = Conv2D(filters, kernel_size=f_size, strides=2, padding='same')(layer_input)
@@ -99,19 +103,19 @@ class Pix2Pix():
 
         # Downsampling
         d1 = conv2d(d0, self.gf, bn=False)
-        d2 = conv2d(d1, self.gf*2)
-        d3 = conv2d(d2, self.gf*4)
-        d4 = conv2d(d3, self.gf*8)
-        d5 = conv2d(d4, self.gf*8)
-        d6 = conv2d(d5, self.gf*8)
-        d7 = conv2d(d6, self.gf*8)
+        d2 = conv2d(d1, self.gf * 2)
+        d3 = conv2d(d2, self.gf * 4)
+        d4 = conv2d(d3, self.gf * 8)
+        d5 = conv2d(d4, self.gf * 8)
+        d6 = conv2d(d5, self.gf * 8)
+        d7 = conv2d(d6, self.gf * 8)
 
         # Upsampling
-        u1 = deconv2d(d7, d6, self.gf*8)
-        u2 = deconv2d(u1, d5, self.gf*8)
-        u3 = deconv2d(u2, d4, self.gf*8)
-        u4 = deconv2d(u3, d3, self.gf*4)
-        u5 = deconv2d(u4, d2, self.gf*2)
+        u1 = deconv2d(d7, d6, self.gf * 8)
+        u2 = deconv2d(u1, d5, self.gf * 8)
+        u3 = deconv2d(u2, d4, self.gf * 8)
+        u4 = deconv2d(u3, d3, self.gf * 4)
+        u5 = deconv2d(u4, d2, self.gf * 2)
         u6 = deconv2d(u5, d1, self.gf)
 
         u7 = UpSampling2D(size=2)(u6)
@@ -136,16 +140,15 @@ class Pix2Pix():
         combined_imgs = Concatenate(axis=-1)([img_A, img_B])
 
         d1 = d_layer(combined_imgs, self.df, bn=False)
-        d2 = d_layer(d1, self.df*2)
-        d3 = d_layer(d2, self.df*4)
-        d4 = d_layer(d3, self.df*8)
+        d2 = d_layer(d1, self.df * 2)
+        d3 = d_layer(d2, self.df * 4)
+        d4 = d_layer(d3, self.df * 8)
 
         validity = Conv2D(1, kernel_size=4, strides=1, padding='same')(d4)
 
         return Model([img_A, img_B], validity)
 
     def train(self, epochs, batch_size=1, sample_interval=50):
-
         start_time = datetime.datetime.now()
 
         # Adversarial loss ground truths
@@ -175,16 +178,35 @@ class Pix2Pix():
                 g_loss = self.combined.train_on_batch([imgs_A, imgs_B], [valid, imgs_A])
 
                 elapsed_time = datetime.datetime.now() - start_time
-                # Plot the progress
-                print ("[Epoch %d/%d] [Batch %d/%d] [D loss: %f, acc: %3d%%] [G loss: %f] time: %s" % (epoch, epochs,
-                                                                        batch_i, self.data_loader.n_batches,
-                                                                        d_loss[0], 100*d_loss[1],
-                                                                        g_loss[0],
-                                                                        elapsed_time))
 
                 # If at save interval => save generated image samples
                 if batch_i % sample_interval == 0:
                     self.sample_images(epoch, batch_i)
+
+                # Plot the progress
+                print("[Epoch %d/%d] [Batch %d/%d] [D loss: %f, acc: %3d%%] [G loss: %f] time: %s" % (epoch, epochs,
+                                                                                                      batch_i,
+                                                                                                      self.data_loader.n_batches,
+                                                                                                      d_loss[0],
+                                                                                                      100 * d_loss[1],
+                                                                                                      g_loss[0],
+                                                                                                      elapsed_time))
+
+        # serialize model to JSON
+        com_model_json = self.combined.to_json()
+        gen_model_json = self.generator.to_json()
+        dis_model_json = self.discriminator.to_json()
+        with open("./com_model.json", "w") as json_file:
+            json_file.write(com_model_json)
+        with open("./gen_model.json", "w") as json_file:
+            json_file.write(gen_model_json)
+        with open("./dis_model.json", "w") as json_file:
+            json_file.write(dis_model_json)
+        # serialize weights to HDF5
+        self.combined.save_weights("./com_model.h5")
+        self.generator.save_weights("./gen_model.h5")
+        self.discriminator.save_weights("./dis_model.h5")
+        print("Model saved")
 
     def sample_images(self, epoch, batch_i):
         # create model
@@ -192,7 +214,6 @@ class Pix2Pix():
         model.add(Dense(12, input_dim=8, kernel_initializer='uniform', activation='relu'))
         model.add(Dense(8, kernel_initializer='uniform', activation='relu'))
         model.add(Dense(1, kernel_initializer='uniform', activation='sigmoid'))
-
         # Compile model
         model.compile(loss='binary_crossentropy', optimizer='adam', metrics=['accuracy'])
 
@@ -212,19 +233,36 @@ class Pix2Pix():
         cnt = 0
         for i in range(r):
             for j in range(c):
-                axs[i,j].imshow(gen_imgs[cnt])
+                axs[i, j].imshow(gen_imgs[cnt])
                 axs[i, j].set_title(titles[i])
-                axs[i,j].axis('off')
+                axs[i, j].axis('off')
                 cnt += 1
         fig.savefig("images/%s/%d_%d.png" % (self.dataset_name, epoch, batch_i))
         plt.close()
-        model_json = model.to_json()
-        with open("model.json", "w") as json_file :
-          json_file.write(model_json)
-          print("Saved jason..")
-        model.save_weights("model.h5")
-        print("Saved model to disk")
+
+
 if __name__ == '__main__':
     gan = Pix2Pix()
-    gan.train(epochs=100, batch_size=1, sample_interval=200)
+    counts = input('First train : 1\nUse pre-trained model : 2\n : ')
+    if (int(counts) == 1):
+        gan.train(epochs=100, batch_size=1, sample_interval=200)
+    if (int(counts) == 2):
+        ## use the trained model to generate data
+        test_model = gan.generator
+        test_model.load_weights("./saved_models/gen_model.h5")
+        path = glob("./datasets/pathology/test_random/*")
+        num = 1
+        for img in path:
+            img_B = scipy.misc.imread(img, mode='RGB').astype(np.float)
+            m, n, d = img_B.shape
+            img_show = np.zeros((m, 2 * n, d))
+
+            img_b = np.array([img_B]) / 127.5 - 1
+            fake_A = 0.5 * (test_model.predict(img_b))[0] + 0.5
+            img_show[:, :n, :] = img_B / 255
+            img_show[:, n:2 * n, :] = fake_A
+            scipy.misc.imsave("./images/test_random/%d.jpg" % num, img_show)
+            num = num + 1
+    # files.download('/content/model.json')
+    # files.download('/content/model.h5')
     print("finished..")
