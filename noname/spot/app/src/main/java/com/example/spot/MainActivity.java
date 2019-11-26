@@ -22,86 +22,46 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        imageView = findViewById(R.id.image);
-        addBtn = findViewById(R.id.addBtn);
-        layout = findViewById(R.id.line);
-        context = this;
-        imageView.setOnClickListener(new View.OnClickListener(){
-            @Override
-            public void onClick(View v) {
-                Intent intent = new Intent();
-                intent.setType("image/*");
-                intent.setAction(Intent.ACTION_GET_CONTENT);
-                startActivityForResult(intent, REQUEST_CODE);
-            }
-        });
+        ImageView imageView1 = findViewById(R.id.rightImage);
 
-        imageView2 = findViewById(R.id.image2);
 
-        imageView2.setOnClickListener(new View.OnClickListener(){
-            @Override
-            public void onClick(View v) {
-                Intent intent2 = new Intent();
-                intent2.setType("image/*");
-                intent2.setAction(Intent.ACTION_GET_CONTENT);
-                startActivityForResult(intent2, REQUEST_CODE2);
-            }
-        });
-        addBtn.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                Button btn = new Button(context);
-                btn.setText("버튼" + String.valueOf(count));
-                btn.setX(10 + count * 10);
-                btn.setY(100 + count * 10);
-                btn.setBackgroundColor(Color.argb(0,0,0,0));
-                layout.addView(btn);
-                count++;
-            }
-        });
-    }
+        ImageView imageView2 = findViewById(R.id.leftImage);
 
-    @Override
-    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
-        if (requestCode == REQUEST_CODE ) {
-            if (resultCode == RESULT_OK) {
-                try {
-                    InputStream in = getContentResolver().openInputStream(data.getData());
-                    img = BitmapFactory.decodeStream(in);
-                    in.close();
-                    imageView.setImageBitmap(img);
-                    pixels = new int[img.getWidth() * img.getHeight()];
-                    img.getPixels(pixels, 0, img.getWidth(), 0, 0, img.getWidth(), img.getHeight());
-                    for (int row = 0; row < img.getHeight(); row++)
-                        for (int column = 0; column < img.getWidth(); column++)
-                            color = Color.valueOf(pixels[row * img.getWidth() + column]);
-                } catch (Exception e) {
 
-                }
-            } else if (resultCode == RESULT_CANCELED) {
-                Toast.makeText(this, "사진 선택 취소", Toast.LENGTH_LONG).show();
+
+        // 애셋매니저
+        AssetManager am = getResources().getAssets();
+        InputStream leftImage = null;
+        InputStream rightImage = null;
+
+        try {
+            // 애셋 폴더에 저장된 0_fake_B.png 열기.
+            rightImage = am.open("0_fake_B.png");
+            leftImage = am.open("0_real_B.png");
+
+
+            // 입력스트림 rightImage와 leftImage를 통해 이미지를 Bitmap 객체로 변환.
+            Bitmap bm1 = BitmapFactory.decodeStream(rightImage);
+            Bitmap bm2 = BitmapFactory.decodeStream(leftImage);
+
+
+            // 만들어진 Bitmap 객체를 이미지뷰에 표시.
+            imageView1.setImageBitmap(bm1);
+            imageView2.setImageBitmap(bm2);
+
+            rightImage.close();
+            leftImage.close();
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        if ((rightImage != null )) {
+            try {
+                rightImage.close();
+            } catch (Exception e) {
+                e.printStackTrace();
             }
         }
-        else
-        {
-            if (resultCode == RESULT_OK) {
-                try {
-                    InputStream in2 = getContentResolver().openInputStream(data.getData());
-
-                    img2 = BitmapFactory.decodeStream(in2);
-                    in2.close();
-
-                    imageView2.setImageBitmap(img2);
-                } catch (Exception e) {
-
-                }
-            } else if (resultCode == RESULT_CANCELED) {
-                Toast.makeText(this, "사진 선택 취소", Toast.LENGTH_LONG).show();
-            }
-        }
-
-    }
-}
 
     }
 }
