@@ -24,13 +24,8 @@ Our design structure:
 
 The <a href="https://github.com/HaloKim/senier">Senior</a> repo:
 
+1) *Socket* <a href="https://github.com/HaloKim/senier/tree/Processing/Soket/Soket">`Socket/`</a>
 
-### Extensions
-
-
-### Example
-
-
-### Acknowledgements
+2) *ROI GAN* <a href="https://github.com/HaloKim/senier/tree/Processing/ROI%20GAN">`ROI GAN/`</a>
 
 
