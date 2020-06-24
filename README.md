@@ -1,64 +1,30 @@
+## GAN (Generative Adversarial Networks)
+Android Difference Picture Finder Game [Android(Client)-Python(Server)]
 
-<a name="korean"></a>
-졸업작품, 틀린그림찾기(가칭)
-=======
-Version 1.0 September 20th, 2019
+<a href="https://github.com/HaloKim/senier">Senior</a> is a 
 
+Our design structure:
 
-가천대학교 소프트웨어학과 2019년 졸업작품 프로젝트<br>
+* Run based on static files hosted by any server. 
 
+## Get Started
 
-#
-### 목차
-    
-  - [프로젝트 소개](#프로젝트-소개)  
-    - [기능 1](#기능-1)
-    - [기능 2](#기능-2)
-  - [요구 사항](#요구-사항) 
-  - [참고 자료](#참고-자료)
-  - [사용 라이브러리](#사용-라이브러리)
- 
-프로젝트 소개
-=====
-## 기능 1
-
- !
+<pre>
+> pip install -r requirements.txt
+</pre>
 
 
-## 기능 2
+### Tour
 
- !
-
-  
-요구 사항
-=====
-### 1. 환경 ###
-- Python 3.xx
-- 
-
-### 2. 설치 및 사용방법 ### 
+The <a href="https://github.com/HaloKim/senier">Senior</a> repo:
 
 
-참고 자료
-=====
-
-1.
-2.
-3.
+### Extensions
 
 
-사용 라이브러리
-=====
-
-1.
-2.
-3.
+### Example
 
 
-Developer
-=====
-<br>
-  김광륜(https://github.com/HaloKim)<br>
-  이석재(https://github.com/doljae)<br>
-  최진경(https://github.com/choijinkyung)<br>
+### Acknowledgements
+
 
