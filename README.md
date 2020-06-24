@@ -22,7 +22,7 @@ Our design structure:
 
 ### Tour
 
-The <a href="https://github.com/HaloKim/senier">Senior</a> repo:
+The <a href="https://github.com/HaloKim/senier">Senier</a> repo:
 
 1) *Socket* <a href="https://github.com/HaloKim/senier/tree/Processing/Soket/Soket">`Socket/`</a>
 
